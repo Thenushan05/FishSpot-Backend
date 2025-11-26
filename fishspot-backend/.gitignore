@@ -1,0 +1,71 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Environment files
+.env
+.env.*
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Test / coverage
+.pytest_cache/
+pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Mypy
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Large/derived data and binaries
+# Ignore all data by default, keep a .gitkeep if needed
+data/
+!data/.gitkeep
+*.nc
+*.nc4
+*.h5
+*.hdf5
+
+# Models and binary artifacts
+models/
+!models/.gitkeep
+*.joblib
+*.pkl
+
+# Databases
+*.sqlite3
+*.db
+
+# wheel / pip metadata
+pip-wheel-metadata/
