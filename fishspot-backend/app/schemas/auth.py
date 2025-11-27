@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
 
 
@@ -12,10 +12,11 @@ class TokenData(BaseModel):
 
 
 class LoginIn(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
 class RegisterIn(BaseModel):
-    email: str
+    name: Optional[str]
+    email: EmailStr
     password: str

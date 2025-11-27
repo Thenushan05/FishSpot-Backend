@@ -1,17 +1,35 @@
-"""Authentication dependencies for FastAPI routes."""
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+"""Authentication dependencies for FastAPI routes.
+
+This module extracts JWT from either the Authorization header or an
+`access_token` httpOnly cookie (dev convenience). It decodes and returns a
+minimal user context. In production you may prefer to only accept Authorization
+headers and/or use session cookies with CSRF protection.
+"""
+from typing import Optional
+
+from fastapi import Request, HTTPException, status
 
 from app.core.security import decode_access_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+
+def get_token_from_request(request: Request) -> Optional[str]:
+    auth = request.headers.get("Authorization")
+    if auth and auth.lower().startswith("bearer "):
+        return auth.split(" ", 1)[1]
+
+    # Fallback to cookie named `access_token`
+    token = request.cookies.get("access_token")
+    if token:
+        return token
+
+    return None
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
-    """Return a minimal user context extracted from token payload.
+def get_current_user(request: Request) -> dict:
+    token = get_token_from_request(request)
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing auth token")
 
-    Replace with DB lookup in a full implementation.
-    """
     try:
         payload = decode_access_token(token)
     except Exception:

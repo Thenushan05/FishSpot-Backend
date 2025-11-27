@@ -86,3 +86,57 @@ def get_depth(lat: float, lon: float) -> dict:
             ds.close()
         except Exception:
             pass
+
+
+def get_depths(lats, lons):
+    """Vectorized depth lookup for arrays/lists of lat/lon.
+
+    Returns a list of dicts like get_depth for each input point, but is
+    optimized to open the dataset only once.
+    """
+    if not DATA_PATH.exists():
+        raise FileNotFoundError(f"Depth NetCDF not found at {DATA_PATH}")
+
+    ds = xr.open_dataset(DATA_PATH)
+    try:
+        lat_name, lon_name = _find_coord_names(ds)
+        if lat_name is None or lon_name is None:
+            raise RuntimeError(f"Could not find lat/lon coords in dataset: {list(ds.coords.keys())}")
+
+        varname = _find_depth_var(ds)
+        if varname is None:
+            raise RuntimeError("Could not detect a depth variable in NetCDF")
+
+        lats_arr = np.asarray(lats)
+        lons_arr = np.asarray(lons)
+
+        # handle 0..360 vs -180..180
+        ds_lons = ds[lon_name].values
+        if ds_lons.max() > 180:
+            # convert negative longitudes to 0-360
+            lons_sel = np.where(lons_arr < 0, lons_arr % 360, lons_arr)
+        else:
+            lons_sel = lons_arr
+
+        # Create DataArray of points and select nearest
+        # We'll iterate in chunks to avoid memory blowups but try vectorized selection
+        results = []
+        for lat_val, lon_val, lon_in in zip(lats_arr.tolist(), lons_arr.tolist(), lons_sel.tolist()):
+            sel = ds[varname].sel({lat_name: lat_val, lon_name: lon_in}, method="nearest")
+            val = sel.values
+            grid_lat = float(sel.coords[lat_name].values)
+            grid_lon = float(sel.coords[lon_name].values)
+            if hasattr(val, 'item'):
+                val = val.item()
+            try:
+                v = None if np.isnan(val) else float(val)
+            except Exception:
+                v = None
+            results.append({"value": v, "var": varname, "lat": grid_lat, "lon": grid_lon})
+
+        return results
+    finally:
+        try:
+            ds.close()
+        except Exception:
+            pass

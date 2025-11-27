@@ -11,36 +11,107 @@ except Exception:
 
 # Mongo client integration
 from app.db import mongo
+from app.db.base import Base
+from app.db.session import engine
 
 
 def create_app() -> FastAPI:
     """Create FastAPI app and mount routers."""
     app = FastAPI(title="FishSpot Backend")
 
+    # Security headers + request limits
+    @app.middleware("http")
+    async def security_headers_and_body_limit(request, call_next):
+        # Enforce a conservative maximum request body size (1 MiB) to reduce abuse
+        MAX_BODY = 1_048_576
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                if int(content_length) > MAX_BODY:
+                    from starlette.responses import PlainTextResponse
+
+                    return PlainTextResponse("Request payload too large", status_code=413)
+            except Exception:
+                pass
+
+        response = await call_next(request)
+
+        # Security-related response headers
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=()")
+        # Content Security Policy - minimal default for APIs; frontends can supply stricter CSP
+        response.headers.setdefault("Content-Security-Policy", "default-src 'none'; base-uri 'self'; connect-src 'self' http://localhost:8000 https://api.openweathermap.org; frame-ancestors 'none'; form-action 'self';")
+
+        return response
+
     # CORS - allow local frontend dev origins
     # Accept origins from environment variable `ALLOW_ORIGINS` (comma-separated)
     # Fallback includes common localhost origins and 127.0.0.1 variants.
     import os
+    import re
+    from starlette.responses import JSONResponse
 
     env_origins = os.environ.get("ALLOW_ORIGINS")
+    allow_origin_regex = None
     if env_origins:
-        origins = [o.strip() for o in env_origins.split(",") if o.strip()]
+        if env_origins.strip() == "*":
+            # allow any origin (use regex so Access-Control-Allow-Origin echoes
+            # the request origin and still permits credentials)
+            allow_origin_regex = r".*"
+            origins = []
+        else:
+            origins = [o.strip() for o in env_origins.split(",") if o.strip()]
     else:
-        origins = [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "http://localhost",
-        ]
+        # Development convenience: allow all origins by default to avoid CORS
+        # issues during local testing. Set ALLOW_ORIGINS in environment to
+        # restrict origins if needed.
+        allow_origin_regex = r".*"
+        origins = []
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
-    )
+    # If allow_origin_regex is set, pass it to CORSMiddleware; otherwise pass explicit list.
+    cors_kwargs = {
+        "allow_credentials": True,
+        "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["*"],
+    }
+    if allow_origin_regex:
+        cors_kwargs["allow_origin_regex"] = allow_origin_regex
+    else:
+        cors_kwargs["allow_origins"] = origins
+
+    app.add_middleware(CORSMiddleware, **cors_kwargs)
+
+    # Helpful middleware: if an incoming request has an Origin header and that
+    # origin is not allowed, return a clear JSON 403 explaining the CORS block.
+    # This runs before route handlers but after CORSMiddleware; it just provides
+    # friendlier messages for development when the origin isn't in the allowlist.
+    def _is_origin_allowed(origin: str) -> bool:
+        if not origin:
+            return True
+        if allow_origin_regex:
+            try:
+                return re.match(allow_origin_regex, origin) is not None
+            except Exception:
+                return False
+        return origin in origins
+
+    @app.middleware("http")
+    async def _cors_check_middleware(request, call_next):
+        origin = request.headers.get("origin")
+        if origin and not _is_origin_allowed(origin):
+            # Provide a clear error explaining why the browser is blocking the request.
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "detail": "CORS origin denied",
+                    "origin": origin,
+                    "allowed_origins": origins or ["*"],
+                    "hint": "Set ALLOW_ORIGINS env or add this origin to your allowlist. For development you can set ALLOW_ORIGINS='*' but this may disable credentials with some browsers.",
+                },
+            )
+        return await call_next(request)
 
     # Connect to Mongo on startup, close on shutdown
     @app.on_event("startup")
@@ -50,6 +121,12 @@ def create_app() -> FastAPI:
             mongo.get_client()
             # optional quick ping
             await app.state.__dict__.setdefault('mongodb_ping', None)
+            # Ensure SQL models/tables exist for simple dev use
+            try:
+                Base.metadata.create_all(bind=engine)
+            except Exception:
+                # avoid crashing startup if DB cannot be created
+                pass
         except Exception:
             # don't crash app creation on db connection error; log if needed
             pass
@@ -67,6 +144,20 @@ def create_app() -> FastAPI:
         prefix="/api/v1/hotspots",
         tags=["hotspots"],
     )
+
+    # ✅ Include auth API
+    try:
+        from app.api.v1 import auth as auth_router
+        app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["auth"])
+    except Exception:
+        pass
+
+    # ✅ Include simple health/db status endpoints
+    try:
+        from app.api.v1 import health as health_router
+        app.include_router(health_router.router, prefix="/api/v1/health", tags=["health"])
+    except Exception:
+        pass
 
     # ✅ Optionally include agent API if it exists
     try:
