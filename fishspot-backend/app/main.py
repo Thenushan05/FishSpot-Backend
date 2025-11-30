@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 
 # Import routers
 from app.api.v1 import hotspots as hotspots_router
@@ -18,6 +20,21 @@ from app.db.session import engine
 def create_app() -> FastAPI:
     """Create FastAPI app and mount routers."""
     app = FastAPI(title="FishSpot Backend")
+
+    # Custom exception handler to return errors as "error" instead of "detail"
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exc: HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": exc.detail},
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        return JSONResponse(
+            status_code=422,
+            content={"error": "Validation error", "details": exc.errors()},
+        )
 
     # Security headers + request limits
     @app.middleware("http")
@@ -121,14 +138,17 @@ def create_app() -> FastAPI:
             mongo.get_client()
             # optional quick ping
             await app.state.__dict__.setdefault('mongodb_ping', None)
-            # Ensure SQL models/tables exist for simple dev use
-            try:
-                Base.metadata.create_all(bind=engine)
-            except Exception:
-                # avoid crashing startup if DB cannot be created
-                pass
         except Exception:
             # don't crash app creation on db connection error; log if needed
+            pass
+        # Ensure SQL models/tables exist for simple dev use
+        try:
+            print("🔄 Creating database tables if they don't exist...")
+            Base.metadata.create_all(bind=engine)
+            print("✅ Database tables ready")
+        except Exception as e:
+            print(f"⚠️ Warning: Could not create database tables: {e}")
+            # avoid crashing startup if DB cannot be created
             pass
 
     @app.on_event("shutdown")

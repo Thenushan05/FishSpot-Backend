@@ -15,46 +15,64 @@ router = APIRouter()
 
 @router.post("/token", response_model=Token)
 def login_for_access_token(data: LoginIn, db: Session = Depends(get_db)):
-    # ORM queries are parameterized by SQLAlchemy (safe against SQL injection)
-    user = db.query(User).filter(User.email == data.email).first()
-    if not user or not verify_password(data.password, user.hashed_password):
-        # Return generic message to avoid user enumeration
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    try:
+        # ORM queries are parameterized by SQLAlchemy (safe against SQL injection)
+        user = db.query(User).filter(User.email == data.email).first()
+        if not user or not verify_password(data.password, user.hashed_password):
+            # Return generic message to avoid user enumeration
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
-    access_token = create_access_token(subject=str(user.id))
-    refresh_token = create_refresh_token(subject=str(user.id))
+        access_token = create_access_token(subject=str(user.id))
+        refresh_token = create_refresh_token(subject=str(user.id))
 
-    # set tokens as httpOnly cookies (dev-friendly). Frontend should call with credentials included.
-    resp = JSONResponse(content={"access_token": access_token, "token_type": "bearer"})
-    # cookie lifetimes in seconds
-    access_max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    refresh_max_age = settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60
-    resp.set_cookie("access_token", access_token, httponly=True, samesite="lax", secure=False, max_age=access_max_age)
-    resp.set_cookie("refresh_token", refresh_token, httponly=True, samesite="lax", secure=False, max_age=refresh_max_age)
-    return resp
+        # set tokens as httpOnly cookies (dev-friendly). Frontend should call with credentials included.
+        resp = JSONResponse(content={"access_token": access_token, "token_type": "bearer"})
+        # cookie lifetimes in seconds
+        access_max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        refresh_max_age = settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60
+        resp.set_cookie("access_token", access_token, httponly=True, samesite="lax", secure=False, max_age=access_max_age)
+        resp.set_cookie("refresh_token", refresh_token, httponly=True, samesite="lax", secure=False, max_age=refresh_max_age)
+        return resp
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Return meaningful error instead of 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Login failed: {str(e)}"
+        )
 
 
 @router.post("/register", response_model=Token)
 def register(data: RegisterIn, db: Session = Depends(get_db)):
-    # Prevent overly large or malformed inputs (Pydantic already validates small size)
-    existing = db.query(User).filter(User.email == data.email).first()
-    if existing:
-        # Generic error to avoid leaking which emails are registered
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Registration failed")
+    try:
+        # Prevent overly large or malformed inputs (Pydantic already validates small size)
+        existing = db.query(User).filter(User.email == data.email).first()
+        if existing:
+            # Generic error to avoid leaking which emails are registered
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Registration failed. Email may already be in use.")
 
-    user = User(email=data.email, name=getattr(data, "name", None), hashed_password=get_password_hash(data.password))
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+        user = User(email=data.email, name=getattr(data, "name", None), hashed_password=get_password_hash(data.password))
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
-    access_token = create_access_token(subject=str(user.id))
-    refresh_token = create_refresh_token(subject=str(user.id))
-    resp = JSONResponse(content={"access_token": access_token, "token_type": "bearer"})
-    access_max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    refresh_max_age = settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60
-    resp.set_cookie("access_token", access_token, httponly=True, samesite="lax", secure=False, max_age=access_max_age)
-    resp.set_cookie("refresh_token", refresh_token, httponly=True, samesite="lax", secure=False, max_age=refresh_max_age)
-    return resp
+        access_token = create_access_token(subject=str(user.id))
+        refresh_token = create_refresh_token(subject=str(user.id))
+        resp = JSONResponse(content={"access_token": access_token, "token_type": "bearer"})
+        access_max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        refresh_max_age = settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60
+        resp.set_cookie("access_token", access_token, httponly=True, samesite="lax", secure=False, max_age=access_max_age)
+        resp.set_cookie("refresh_token", refresh_token, httponly=True, samesite="lax", secure=False, max_age=refresh_max_age)
+        return resp
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Return meaningful error instead of 500
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
+        )
 
 
 
@@ -97,9 +115,3 @@ def read_current_user(current: dict = Depends(__import__('app.core.auth', fromli
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return UserOut.from_orm(user)
-
-
-@router.exception_handler(Exception)
-def _generic_exception_handler(request: Request, exc: Exception):
-    # Always return a generic message for unexpected errors to avoid leaking internals
-    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
