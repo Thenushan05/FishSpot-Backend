@@ -1,3 +1,4 @@
+print("Starting FishSpot backend...")
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -141,15 +142,8 @@ def create_app() -> FastAPI:
         except Exception:
             # don't crash app creation on db connection error; log if needed
             pass
-        # Ensure SQL models/tables exist for simple dev use
-        try:
-            print("🔄 Creating database tables if they don't exist...")
-            Base.metadata.create_all(bind=engine)
-            print("✅ Database tables ready")
-        except Exception as e:
-            print(f"⚠️ Warning: Could not create database tables: {e}")
-            # avoid crashing startup if DB cannot be created
-            pass
+        # MongoDB is the primary database - SQLite disabled
+        print("✅ Using MongoDB for data storage")
 
     @app.on_event("shutdown")
     async def _shutdown_db():
@@ -165,12 +159,18 @@ def create_app() -> FastAPI:
         tags=["hotspots"],
     )
 
-    # ✅ Include auth API
+    # ✅ Include MongoDB auth router
     try:
-        from app.api.v1 import auth as auth_router
+        from app.api.v1 import auth_mongo as auth_router
         app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["auth"])
-    except Exception:
-        pass
+    except Exception as e:
+        # Fallback to SQLite auth if MongoDB fails
+        print(f"⚠️ MongoDB auth failed, using SQLite: {e}")
+        try:
+            from app.api.v1 import auth as auth_router
+            app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["auth"])
+        except Exception:
+            pass
 
     # ✅ Include simple health/db status endpoints
     try:
@@ -223,6 +223,32 @@ def create_app() -> FastAPI:
         from app.api import depth as depth_router
         app.include_router(depth_router.router, prefix="/api/depth", tags=["depth"])
     except Exception:
+        pass
+
+    # maintenance router (original - static vessel data)
+    try:
+        from app.api.v1 import maintenance as maintenance_router
+        app.include_router(
+            maintenance_router.router,
+            prefix="/api/v1/maintenance",
+            tags=["maintenance"]
+        )
+        print("✅ Maintenance router registered at /api/v1/maintenance")
+    except Exception as e:
+        print(f"⚠️ Failed to load maintenance router: {e}")
+        pass
+
+    # maintenance rules router (NEW - dynamic rule-based tracking)
+    try:
+        from app.api.v1 import maintenance_rules as maintenance_rules_router
+        app.include_router(
+            maintenance_rules_router.router,
+            prefix="/api/v1/maintenance-rules",
+            tags=["maintenance-rules"]
+        )
+        print("✅ Maintenance rules router registered at /api/v1/maintenance-rules")
+    except Exception as e:
+        print(f"⚠️ Failed to load maintenance rules router: {e}")
         pass
 
     return app

@@ -39,7 +39,35 @@ class GridCell(BaseModel):
 class Prediction(BaseModel):
     cell: GridCell
     score: float
+    sst: float = None
+    ssh: float = None
+    chlorophyll: float = None
+    hotspot_level: str = "no_hotspot"
 
 
 class BatchPrediction(BaseModel):
     predictions: List[Prediction]
+
+
+# New bbox-based request for region predictions
+class BBox(BaseModel):
+    min_lat: float
+    max_lat: float
+    min_lon: float
+    max_lon: float
+
+
+class RegionPredictRequest(BaseModel):
+    date: str  # Format: YYYYMMDD
+    species: str = "YFT"
+    threshold: float = 0.6
+    top_k: int = 200
+    bbox: BBox
+    overrides: dict = {}
+
+
+class RegionPredictResponse(BaseModel):
+    predictions: List[Prediction]
+    total_cells: int
+    date: str
+    species: str

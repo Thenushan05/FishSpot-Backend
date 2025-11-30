@@ -38,4 +38,7 @@ def get_current_user(request: Request) -> dict:
     if not payload or "sub" not in payload:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
-    return {"user_id": int(payload.get("sub")), "raw": payload}
+    # MongoDB uses string ObjectIDs, SQLite uses integers
+    user_id = payload.get("sub")
+    # Keep as string for MongoDB compatibility
+    return {"user_id": str(user_id), "raw": payload}

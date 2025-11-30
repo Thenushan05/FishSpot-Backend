@@ -3,9 +3,17 @@ FEATURE_COLS = [
     "MONTH",
     "LAT",
     "LON",
-    "SST",
+    "DEPTH",
     "SSS",
+    "SSD",
+    "SST",
+    "SSH",
     "CHLO",
+    "MONTH_SIN",
+    "MONTH_COS",
+    "DEPTH_ABS",
+    "SPECIES_CODE",
+    "MONSOON",
 ]
 
 T_CAND = 0.60
