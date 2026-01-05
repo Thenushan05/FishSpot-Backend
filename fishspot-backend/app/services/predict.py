@@ -14,6 +14,7 @@ import joblib
 
 from app.services.env_loader import load_env_grid
 from app.services import depth_service
+from app.services import openmeteo_service
 
 
 # Primary and alternative model locations
@@ -200,6 +201,29 @@ def predict_hotspots_region(
             pass
 
     df["depth_abs"] = df["depth"].abs()
+
+    # Fetch SST/SSH for points missing those values (do not write any files)
+    try:
+        if "sst" not in df.columns or "ssh" not in df.columns or df["sst"].isna().any() or df["ssh"].isna().any():
+            need_sst = df["sst"].isna() if "sst" in df.columns else pd.Series([True] * len(df))
+            need_ssh = df["ssh"].isna() if "ssh" in df.columns else pd.Series([True] * len(df))
+            need_any = need_sst | need_ssh
+            if need_any.any():
+                lats = df.loc[need_any, "lat"].tolist()
+                lons = df.loc[need_any, "lon"].tolist()
+                try:
+                    fetched = openmeteo_service.get_sst_ssh_for_points(lats, lons)
+                    # assign back
+                    for idx, res in zip(df.loc[need_any].index.tolist(), fetched):
+                        if res.get("sst") is not None:
+                            df.at[idx, "sst"] = float(res.get("sst"))
+                        if res.get("ssh") is not None:
+                            df.at[idx, "ssh"] = float(res.get("ssh"))
+                except Exception:
+                    # graceful fallback: leave NaNs
+                    pass
+    except Exception:
+        pass
 
     # compute ssd fallback
     try:

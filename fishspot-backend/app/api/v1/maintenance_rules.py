@@ -164,12 +164,13 @@ async def get_vessel_state(
         raise HTTPException(status_code=404, detail="Vessel not found")
     
     # Get vessel state (create default if doesn't exist)
-    state = await db.vessel_states.find_one({"vessel_id": vessel_id})
+    state = await db.vessel_states.find_one({"vessel_id": vessel_id, "userId": user_id})
     
     if not state:
         # Create default state
         state = {
             "vessel_id": vessel_id,
+            "userId": user_id,
             "engine_hours": 0,
             "total_trips": 0,
             "last_trip_date": None,
@@ -209,14 +210,16 @@ async def update_vessel_state(
     update_dict["updated_at"] = datetime.now()
     
     # Update or create state
+    # Ensure userId is stored with the state so different users don't share state
+    update_dict["userId"] = user_id
     result = await db.vessel_states.update_one(
-        {"vessel_id": vessel_id},
+        {"vessel_id": vessel_id, "userId": user_id},
         {"$set": update_dict},
         upsert=True
     )
     
     # Fetch updated state
-    state = await db.vessel_states.find_one({"vessel_id": vessel_id})
+    state = await db.vessel_states.find_one({"vessel_id": vessel_id, "userId": user_id})
     state.pop("_id", None)
     
     return state
@@ -249,12 +252,13 @@ async def complete_trip(
     if not vessel:
         raise HTTPException(status_code=404, detail="Vessel not found")
     
-    # Get current state
-    state = await db.vessel_states.find_one({"vessel_id": vessel_id})
+    # Get current state (user-scoped)
+    state = await db.vessel_states.find_one({"vessel_id": vessel_id, "userId": user_id})
     
     if not state:
         state = {
             "vessel_id": vessel_id,
+            "userId": user_id,
             "engine_hours": 0,
             "total_trips": 0,
             "last_trip_date": None,
@@ -269,7 +273,7 @@ async def complete_trip(
     
     # Save to database
     await db.vessel_states.update_one(
-        {"vessel_id": vessel_id},
+        {"vessel_id": vessel_id, "userId": user_id},
         {"$set": state},
         upsert=True
     )
@@ -309,6 +313,8 @@ async def get_maintenance_logs(
     
     # Build query
     query = {"vessel_id": vessel_id}
+    # Ensure logs returned belong to the requesting user as well (defense-in-depth)
+    query["userId"] = user_id
     if system_id:
         query["system_id"] = system_id
     if part_name:
@@ -351,10 +357,12 @@ async def log_maintenance(
         raise HTTPException(status_code=404, detail="Vessel not found")
     
     # Get current vessel state to auto-fill counters
-    state = await db.vessel_states.find_one({"vessel_id": vessel_id})
+    state = await db.vessel_states.find_one({"vessel_id": vessel_id, "userId": user_id})
     
     log_dict = request.dict()
     log_dict["vessel_id"] = vessel_id
+    # Attach owning user id so logs are clearly owned by a user
+    log_dict["userId"] = user_id
     log_dict["created_at"] = datetime.now()
     
     # Auto-fill counters if not provided
@@ -364,10 +372,74 @@ async def log_maintenance(
         if log_dict["trips_at_service"] is None:
             log_dict["trips_at_service"] = state.get("total_trips", 0)
     
+    # Coerce numeric counters to ints when possible to ensure DB stores numbers
+    try:
+        if log_dict.get("engine_hours_at_service") is not None:
+            log_dict["engine_hours_at_service"] = int(log_dict["engine_hours_at_service"])
+    except Exception:
+        # leave as-is if conversion fails
+        pass
+    try:
+        if log_dict.get("trips_at_service") is not None:
+            log_dict["trips_at_service"] = int(log_dict["trips_at_service"])
+    except Exception:
+        pass
+
     result = await db.maintenance_logs.insert_one(log_dict)
     log_dict["id"] = str(result.inserted_id)
     log_dict.pop("_id", None)
-    
+
+    # After logging maintenance, ensure vessel state counters reflect the
+    # recorded service point. If the log reports higher engine hours or trips
+    # than the stored vessel state, update the vessel state so the summary
+    # calculations use the most recent counters and don't show a just-logged
+    # service as still overdue.
+    try:
+        state = await db.vessel_states.find_one({"vessel_id": vessel_id, "userId": user_id})
+        if not state:
+            state = {
+                "vessel_id": vessel_id,
+                "userId": user_id,
+                "engine_hours": 0,
+                "total_trips": 0,
+                "last_trip_date": None,
+            }
+
+        updated = False
+        # Normalize numeric values
+        logged_engine = log_dict.get("engine_hours_at_service")
+        logged_trips = log_dict.get("trips_at_service")
+
+        if logged_engine is not None:
+            try:
+                logged_engine_val = int(logged_engine)
+            except Exception:
+                logged_engine_val = None
+            if logged_engine_val is not None and logged_engine_val > state.get("engine_hours", 0):
+                state["engine_hours"] = logged_engine_val
+                updated = True
+
+        if logged_trips is not None:
+            try:
+                logged_trips_val = int(logged_trips)
+            except Exception:
+                logged_trips_val = None
+            if logged_trips_val is not None and logged_trips_val > state.get("total_trips", 0):
+                state["total_trips"] = logged_trips_val
+                updated = True
+
+        if updated:
+            state["updated_at"] = datetime.now()
+            # persist updated state
+            await db.vessel_states.update_one(
+                {"vessel_id": vessel_id, "userId": user_id},
+                {"$set": state},
+                upsert=True,
+            )
+    except Exception:
+        # Don't fail the log on state update problems; logging should succeed
+        pass
+
     return log_dict
 
 
@@ -402,8 +474,8 @@ async def get_maintenance_summary(
     
     vessel_name = vessel.get("name", "Unknown Vessel")
     
-    # Get vessel state
-    state = await db.vessel_states.find_one({"vessel_id": vessel_id})
+    # Get vessel state (user-scoped)
+    state = await db.vessel_states.find_one({"vessel_id": vessel_id, "userId": user_id})
     
     if not state:
         # Create default state
@@ -429,8 +501,8 @@ async def get_maintenance_summary(
         rule.pop("userId", None)
         rules.append(MaintenanceRule(**rule))
     
-    # Get all maintenance logs for this vessel
-    logs_cursor = db.maintenance_logs.find({"vessel_id": vessel_id})
+    # Get all maintenance logs for this vessel (user-scoped)
+    logs_cursor = db.maintenance_logs.find({"vessel_id": vessel_id, "userId": user_id})
     logs_list = await logs_cursor.to_list(length=1000)
     
     logs = []

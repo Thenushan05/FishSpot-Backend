@@ -122,6 +122,7 @@ async def insert_vessel():
     # Initialize vessel state
     vessel_state = {
         "vessel_id": vessel_id,
+        "userId": user_id,
         "engine_hours": 0,
         "total_trips": 0,
         "last_trip_date": None,

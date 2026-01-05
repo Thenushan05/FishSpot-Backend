@@ -40,13 +40,26 @@ def calculate_part_status(
     
     # Determine last service value and current value based on trigger type
     if trigger_type == "hours":
-        current = vessel_state.engine_hours
-        last = last_log.engine_hours_at_service if last_log and last_log.engine_hours_at_service is not None else 0
+        # Ensure numeric values
+        try:
+            current = int(vessel_state.engine_hours)
+        except Exception:
+            current = 0
+        try:
+            last = int(last_log.engine_hours_at_service) if last_log and last_log.engine_hours_at_service is not None else 0
+        except Exception:
+            last = 0
         unit = "hours"
         
     elif trigger_type == "trips":
-        current = vessel_state.total_trips
-        last = last_log.trips_at_service if last_log and last_log.trips_at_service is not None else 0
+        try:
+            current = int(vessel_state.total_trips)
+        except Exception:
+            current = 0
+        try:
+            last = int(last_log.trips_at_service) if last_log and last_log.trips_at_service is not None else 0
+        except Exception:
+            last = 0
         unit = "trips"
         
     elif trigger_type == "days":
@@ -88,9 +101,13 @@ def calculate_part_status(
     remaining = due_at - current
     
     # Determine status
-    if remaining <= 0:
+    # Treat remaining < 0 as overdue. If remaining == 0 consider it "due now" (due_soon)
+    if remaining < 0:
         status = "overdue"
         message = f"{rule.part_name} is overdue by {abs(remaining)} {unit}"
+    elif remaining == 0:
+        status = "due_soon"
+        message = f"{rule.part_name} is due now"
     elif remaining <= warning:
         status = "due_soon"
         message = f"{rule.part_name} due in {remaining} {unit}"
@@ -208,8 +225,66 @@ def calculate_vessel_maintenance_summary(
             logs_by_system[log.system_id][log.part_name] = log
         else:
             existing_log = logs_by_system[log.system_id][log.part_name]
-            if log.done_at > existing_log.done_at:
+            # Prefer `created_at` if available because it reliably reflects insertion order/timestamp
+            # Fall back to `done_at` if `created_at` is not present. Also consider numeric counters
+            # (engine_hours_at_service / trips_at_service) as tiebreakers.
+            def parse_dt(val):
+                try:
+                    if val is None:
+                        return None
+                    if isinstance(val, str):
+                        return datetime.fromisoformat(val.replace('Z', '+00:00'))
+                    if isinstance(val, datetime):
+                        return val
+                except Exception:
+                    return None
+                return None
+
+            new_created = parse_dt(getattr(log, "created_at", None) or log.created_at if hasattr(log, "created_at") else None)
+            existing_created = parse_dt(getattr(existing_log, "created_at", None) or existing_log.created_at if hasattr(existing_log, "created_at") else None)
+
+            if new_created and existing_created:
+                if new_created > existing_created:
+                    logs_by_system[log.system_id][log.part_name] = log
+                    continue
+            elif new_created and not existing_created:
                 logs_by_system[log.system_id][log.part_name] = log
+                continue
+
+            # Fallback to comparing done_at
+            new_done = parse_dt(getattr(log, "done_at", None))
+            existing_done = parse_dt(getattr(existing_log, "done_at", None))
+            if new_done and existing_done:
+                if new_done > existing_done:
+                    logs_by_system[log.system_id][log.part_name] = log
+                    continue
+
+            # As further fallback, compare numeric counters if present
+            try:
+                new_hours = int(log.engine_hours_at_service) if getattr(log, "engine_hours_at_service", None) is not None else None
+            except Exception:
+                new_hours = None
+            try:
+                existing_hours = int(existing_log.engine_hours_at_service) if getattr(existing_log, "engine_hours_at_service", None) is not None else None
+            except Exception:
+                existing_hours = None
+            if new_hours is not None and existing_hours is not None:
+                if new_hours > existing_hours:
+                    logs_by_system[log.system_id][log.part_name] = log
+                    continue
+
+            try:
+                new_trips = int(log.trips_at_service) if getattr(log, "trips_at_service", None) is not None else None
+            except Exception:
+                new_trips = None
+            try:
+                existing_trips = int(existing_log.trips_at_service) if getattr(existing_log, "trips_at_service", None) is not None else None
+            except Exception:
+                existing_trips = None
+            if new_trips is not None and existing_trips is not None:
+                if new_trips > existing_trips:
+                    logs_by_system[log.system_id][log.part_name] = log
+                    continue
     
     # System name mapping (you can make this configurable)
     system_names = {

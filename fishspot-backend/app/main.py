@@ -71,22 +71,23 @@ def create_app() -> FastAPI:
     import re
     from starlette.responses import JSONResponse
 
+    # For development: allow common localhost origins with credentials support.
+    # When credentials are used, browsers require explicit origins (not wildcard *).
+    # The regex pattern matches all localhost/127.0.0.1 origins on any port.
     env_origins = os.environ.get("ALLOW_ORIGINS")
-    allow_origin_regex = None
-    if env_origins:
+    allow_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+    origins = []
+    
+    if env_origins and env_origins.strip():
         if env_origins.strip() == "*":
-            # allow any origin (use regex so Access-Control-Allow-Origin echoes
-            # the request origin and still permits credentials)
-            allow_origin_regex = r".*"
-            origins = []
+            # Use regex that matches common dev origins (localhost/127.0.0.1 on any port)
+            # This works with credentials by echoing the actual origin back
+            allow_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
         else:
+            # Explicit list provided - use it instead of regex
+            allow_origin_regex = None
             origins = [o.strip() for o in env_origins.split(",") if o.strip()]
-    else:
-        # Development convenience: allow all origins by default to avoid CORS
-        # issues during local testing. Set ALLOW_ORIGINS in environment to
-        # restrict origins if needed.
-        allow_origin_regex = r".*"
-        origins = []
+    # else: use default regex for localhost origins
 
     # If allow_origin_regex is set, pass it to CORSMiddleware; otherwise pass explicit list.
     cors_kwargs = {

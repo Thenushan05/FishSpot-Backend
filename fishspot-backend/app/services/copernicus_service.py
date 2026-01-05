@@ -275,12 +275,26 @@ class CopernicusService:
                 latitude=lat, 
                 longitude=lon, 
                 method="nearest"
-            ).values
+            )
+            
+            # If there are time/depth dimensions, take the first value or mean
+            if 'time' in value.dims:
+                value = value.isel(time=0)
+            if 'depth' in value.dims:
+                value = value.isel(depth=0)
+            
+            # Get the numpy array
+            arr = value.values
             
             # Handle different array shapes
-            if hasattr(value, 'item'):
-                return float(value.item())
-            return float(value)
+            if hasattr(arr, 'size'):
+                if arr.size == 1:
+                    return float(arr.item())
+                elif arr.size > 1:
+                    # Take mean if multiple values
+                    import numpy as np
+                    return float(np.nanmean(arr))
+            return float(arr)
             
         except Exception as e:
             print(f"❌ Error extracting {var_name} at ({lat}, {lon}): {e}")

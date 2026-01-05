@@ -6,6 +6,7 @@ from app.services.predict import predict_hotspots
 from pydantic import BaseModel
 from typing import Optional
 from app.services.predict import predict_hotspots_region
+from app.services.inputs_service import build_region_inputs
 
 
 class RegionRequest(BaseModel):
@@ -75,6 +76,36 @@ def hotspots_region(req: RegionRequest):
     try:
         res = predict_hotspots_region(date=date, species_code=req.species, threshold=req.threshold, top_k=req.top_k, bbox=bbox, overrides=req.overrides)
         return res
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/region/inputs")
+def hotspots_region_inputs(req: RegionRequest):
+    """Return raw inputs (lat, lon, depth, sst, ssh, year, month, SPECIES_CODE) for the requested bbox/date.
+
+    This endpoint performs only in-memory queries (depth from local GEBCO, sst/ssh from Open-Meteo) and
+    returns a JSON list suitable as model input. No CSVs are written.
+    """
+    if req.date is None:
+        date = datetime.utcnow().strftime("%Y%m%d")
+    else:
+        date = req.date
+
+    bbox = None
+    if req.bbox:
+        try:
+            bbox = (float(req.bbox.get("min_lat")), float(req.bbox.get("max_lat")), float(req.bbox.get("min_lon")), float(req.bbox.get("max_lon")))
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid bbox format")
+
+    if bbox is None:
+        raise HTTPException(status_code=400, detail="bbox required for inputs")
+
+    try:
+        rows = build_region_inputs(date=date, bbox=bbox, species=req.species)
+        return {"date": date, "species": req.species, "bbox": req.bbox, "inputs": rows}
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

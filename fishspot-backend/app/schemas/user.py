@@ -12,7 +12,7 @@ class UserCreate(UserBase):
 
 
 class UserOut(UserBase):
-    id: int
+    id: str
     is_active: bool
     role: Optional[str]
 
