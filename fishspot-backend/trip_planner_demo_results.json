@@ -1,0 +1,836 @@
+{
+  "fuel_vessels": [
+    {
+      "vessel_id": "V0001",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 51.8,
+      "fuel_consumption_per_day": 178.2,
+      "fuel_cost_usd_per_day": 231.61
+    },
+    {
+      "vessel_id": "V0002",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 54.7,
+      "fuel_consumption_per_day": 206.6,
+      "fuel_cost_usd_per_day": 268.61
+    },
+    {
+      "vessel_id": "V0003",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 52.7,
+      "fuel_consumption_per_day": 187.8,
+      "fuel_cost_usd_per_day": 244.1
+    },
+    {
+      "vessel_id": "V0004",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 52.3,
+      "fuel_consumption_per_day": 224.9,
+      "fuel_cost_usd_per_day": 292.43
+    },
+    {
+      "vessel_id": "V0005",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 52.7,
+      "fuel_consumption_per_day": 219.2,
+      "fuel_cost_usd_per_day": 284.96
+    },
+    {
+      "vessel_id": "V0006",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 47.6,
+      "fuel_consumption_per_day": 219.4,
+      "fuel_cost_usd_per_day": 285.26
+    },
+    {
+      "vessel_id": "V0007",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 51.9,
+      "fuel_consumption_per_day": 182.4,
+      "fuel_cost_usd_per_day": 237.16
+    },
+    {
+      "vessel_id": "V0008",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 54.4,
+      "fuel_consumption_per_day": 216.6,
+      "fuel_cost_usd_per_day": 281.58
+    },
+    {
+      "vessel_id": "V0009",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 46.4,
+      "fuel_consumption_per_day": 178.5,
+      "fuel_cost_usd_per_day": 231.99
+    },
+    {
+      "vessel_id": "V0010",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 46.8,
+      "fuel_consumption_per_day": 215.1,
+      "fuel_cost_usd_per_day": 279.59
+    },
+    {
+      "vessel_id": "V0011",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 52.1,
+      "fuel_consumption_per_day": 181.5,
+      "fuel_cost_usd_per_day": 235.92
+    },
+    {
+      "vessel_id": "V0012",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 47.9,
+      "fuel_consumption_per_day": 200.2,
+      "fuel_cost_usd_per_day": 260.32
+    },
+    {
+      "vessel_id": "V0013",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 50.2,
+      "fuel_consumption_per_day": 196.2,
+      "fuel_cost_usd_per_day": 255.05
+    },
+    {
+      "vessel_id": "V0014",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 47.5,
+      "fuel_consumption_per_day": 191.2,
+      "fuel_cost_usd_per_day": 248.54
+    },
+    {
+      "vessel_id": "V0015",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 51.1,
+      "fuel_consumption_per_day": 220.8,
+      "fuel_cost_usd_per_day": 286.98
+    },
+    {
+      "vessel_id": "V0016",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 47.2,
+      "fuel_consumption_per_day": 188.1,
+      "fuel_cost_usd_per_day": 244.52
+    },
+    {
+      "vessel_id": "V0017",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 45.3,
+      "fuel_consumption_per_day": 177.6,
+      "fuel_cost_usd_per_day": 230.83
+    },
+    {
+      "vessel_id": "V0018",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 48.5,
+      "fuel_consumption_per_day": 219.4,
+      "fuel_cost_usd_per_day": 285.27
+    },
+    {
+      "vessel_id": "V0019",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 46.9,
+      "fuel_consumption_per_day": 207.9,
+      "fuel_cost_usd_per_day": 270.22
+    },
+    {
+      "vessel_id": "V0020",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 47.9,
+      "fuel_consumption_per_day": 201.9,
+      "fuel_cost_usd_per_day": 262.49
+    },
+    {
+      "vessel_id": "V0021",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 49.4,
+      "fuel_consumption_per_day": 214.6,
+      "fuel_cost_usd_per_day": 279.02
+    },
+    {
+      "vessel_id": "V0022",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 51.2,
+      "fuel_consumption_per_day": 175.0,
+      "fuel_cost_usd_per_day": 227.53
+    },
+    {
+      "vessel_id": "V0023",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 52.8,
+      "fuel_consumption_per_day": 219.8,
+      "fuel_cost_usd_per_day": 285.79
+    },
+    {
+      "vessel_id": "V0024",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 52.5,
+      "fuel_consumption_per_day": 185.3,
+      "fuel_cost_usd_per_day": 240.92
+    },
+    {
+      "vessel_id": "V0025",
+      "vessel_type": "IMUL",
+      "engine_type": "Inboard Diesel",
+      "hp": 53.3,
+      "fuel_consumption_per_day": 191.1,
+      "fuel_cost_usd_per_day": 248.46
+    },
+    {
+      "vessel_id": "V0026",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 39.0,
+      "fuel_consumption_per_day": 65.6,
+      "fuel_cost_usd_per_day": 85.22
+    },
+    {
+      "vessel_id": "V0027",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 40.4,
+      "fuel_consumption_per_day": 52.7,
+      "fuel_cost_usd_per_day": 68.48
+    },
+    {
+      "vessel_id": "V0028",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 42.0,
+      "fuel_consumption_per_day": 65.9,
+      "fuel_cost_usd_per_day": 85.63
+    },
+    {
+      "vessel_id": "V0029",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 38.2,
+      "fuel_consumption_per_day": 61.2,
+      "fuel_cost_usd_per_day": 79.59
+    },
+    {
+      "vessel_id": "V0030",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 43.6,
+      "fuel_consumption_per_day": 57.9,
+      "fuel_cost_usd_per_day": 75.24
+    },
+    {
+      "vessel_id": "V0031",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 37.9,
+      "fuel_consumption_per_day": 50.4,
+      "fuel_cost_usd_per_day": 65.5
+    },
+    {
+      "vessel_id": "V0032",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 43.2,
+      "fuel_consumption_per_day": 61.5,
+      "fuel_cost_usd_per_day": 79.91
+    },
+    {
+      "vessel_id": "V0033",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 42.1,
+      "fuel_consumption_per_day": 66.1,
+      "fuel_cost_usd_per_day": 85.97
+    },
+    {
+      "vessel_id": "V0034",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 41.7,
+      "fuel_consumption_per_day": 60.8,
+      "fuel_cost_usd_per_day": 78.99
+    },
+    {
+      "vessel_id": "V0035",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 40.6,
+      "fuel_consumption_per_day": 63.4,
+      "fuel_cost_usd_per_day": 82.46
+    },
+    {
+      "vessel_id": "V0036",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 39.5,
+      "fuel_consumption_per_day": 61.7,
+      "fuel_cost_usd_per_day": 80.17
+    },
+    {
+      "vessel_id": "V0037",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 43.5,
+      "fuel_consumption_per_day": 56.5,
+      "fuel_cost_usd_per_day": 73.51
+    },
+    {
+      "vessel_id": "V0038",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 40.0,
+      "fuel_consumption_per_day": 53.8,
+      "fuel_cost_usd_per_day": 69.94
+    },
+    {
+      "vessel_id": "V0039",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 39.2,
+      "fuel_consumption_per_day": 60.4,
+      "fuel_cost_usd_per_day": 78.5
+    },
+    {
+      "vessel_id": "V0040",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 42.2,
+      "fuel_consumption_per_day": 61.5,
+      "fuel_cost_usd_per_day": 79.9
+    },
+    {
+      "vessel_id": "V0041",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 41.0,
+      "fuel_consumption_per_day": 62.2,
+      "fuel_cost_usd_per_day": 80.8
+    },
+    {
+      "vessel_id": "V0042",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 40.7,
+      "fuel_consumption_per_day": 64.2,
+      "fuel_cost_usd_per_day": 83.52
+    },
+    {
+      "vessel_id": "V0043",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 42.0,
+      "fuel_consumption_per_day": 54.9,
+      "fuel_cost_usd_per_day": 71.38
+    },
+    {
+      "vessel_id": "V0044",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 40.6,
+      "fuel_consumption_per_day": 58.8,
+      "fuel_cost_usd_per_day": 76.5
+    },
+    {
+      "vessel_id": "V0045",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 40.5,
+      "fuel_consumption_per_day": 60.5,
+      "fuel_cost_usd_per_day": 78.7
+    },
+    {
+      "vessel_id": "V0046",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 41.2,
+      "fuel_consumption_per_day": 58.1,
+      "fuel_cost_usd_per_day": 75.53
+    },
+    {
+      "vessel_id": "V0047",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 39.0,
+      "fuel_consumption_per_day": 51.2,
+      "fuel_cost_usd_per_day": 66.61
+    },
+    {
+      "vessel_id": "V0048",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 40.7,
+      "fuel_consumption_per_day": 59.5,
+      "fuel_cost_usd_per_day": 77.38
+    },
+    {
+      "vessel_id": "V0049",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 36.3,
+      "fuel_consumption_per_day": 57.7,
+      "fuel_cost_usd_per_day": 75.03
+    },
+    {
+      "vessel_id": "V0050",
+      "vessel_type": "IDAY",
+      "engine_type": "Inboard Diesel",
+      "hp": 38.1,
+      "fuel_consumption_per_day": 59.1,
+      "fuel_cost_usd_per_day": 76.87
+    },
+    {
+      "vessel_id": "V0051",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 18.4,
+      "fuel_consumption_per_day": 15.8,
+      "fuel_cost_usd_per_day": 23.67
+    },
+    {
+      "vessel_id": "V0052",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 18.4,
+      "fuel_consumption_per_day": 17.6,
+      "fuel_cost_usd_per_day": 26.47
+    },
+    {
+      "vessel_id": "V0053",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 21.3,
+      "fuel_consumption_per_day": 19.7,
+      "fuel_cost_usd_per_day": 29.52
+    },
+    {
+      "vessel_id": "V0054",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 21.4,
+      "fuel_consumption_per_day": 16.1,
+      "fuel_cost_usd_per_day": 24.19
+    },
+    {
+      "vessel_id": "V0055",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 20.3,
+      "fuel_consumption_per_day": 16.4,
+      "fuel_cost_usd_per_day": 24.62
+    },
+    {
+      "vessel_id": "V0056",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 18.7,
+      "fuel_consumption_per_day": 19.5,
+      "fuel_cost_usd_per_day": 29.21
+    },
+    {
+      "vessel_id": "V0057",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 18.6,
+      "fuel_consumption_per_day": 15.7,
+      "fuel_cost_usd_per_day": 23.54
+    },
+    {
+      "vessel_id": "V0058",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 21.5,
+      "fuel_consumption_per_day": 19.8,
+      "fuel_cost_usd_per_day": 29.77
+    },
+    {
+      "vessel_id": "V0059",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 18.6,
+      "fuel_consumption_per_day": 18.4,
+      "fuel_cost_usd_per_day": 27.54
+    },
+    {
+      "vessel_id": "V0060",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 20.3,
+      "fuel_consumption_per_day": 17.6,
+      "fuel_cost_usd_per_day": 26.36
+    },
+    {
+      "vessel_id": "V0061",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 19.0,
+      "fuel_consumption_per_day": 19.4,
+      "fuel_cost_usd_per_day": 29.16
+    },
+    {
+      "vessel_id": "V0062",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 21.7,
+      "fuel_consumption_per_day": 18.5,
+      "fuel_cost_usd_per_day": 27.81
+    },
+    {
+      "vessel_id": "V0063",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 18.9,
+      "fuel_consumption_per_day": 19.7,
+      "fuel_cost_usd_per_day": 29.52
+    },
+    {
+      "vessel_id": "V0064",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 19.7,
+      "fuel_consumption_per_day": 15.7,
+      "fuel_cost_usd_per_day": 23.54
+    },
+    {
+      "vessel_id": "V0065",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 18.9,
+      "fuel_consumption_per_day": 14.9,
+      "fuel_cost_usd_per_day": 22.4
+    },
+    {
+      "vessel_id": "V0066",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 21.0,
+      "fuel_consumption_per_day": 15.8,
+      "fuel_cost_usd_per_day": 23.65
+    },
+    {
+      "vessel_id": "V0067",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 20.5,
+      "fuel_consumption_per_day": 18.7,
+      "fuel_cost_usd_per_day": 28.12
+    },
+    {
+      "vessel_id": "V0068",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 21.7,
+      "fuel_consumption_per_day": 16.7,
+      "fuel_cost_usd_per_day": 24.99
+    },
+    {
+      "vessel_id": "V0069",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 18.2,
+      "fuel_consumption_per_day": 17.7,
+      "fuel_cost_usd_per_day": 26.55
+    },
+    {
+      "vessel_id": "V0070",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 18.8,
+      "fuel_consumption_per_day": 17.6,
+      "fuel_cost_usd_per_day": 26.35
+    },
+    {
+      "vessel_id": "V0071",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 20.0,
+      "fuel_consumption_per_day": 15.6,
+      "fuel_cost_usd_per_day": 23.33
+    },
+    {
+      "vessel_id": "V0072",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 19.4,
+      "fuel_consumption_per_day": 16.1,
+      "fuel_cost_usd_per_day": 24.15
+    },
+    {
+      "vessel_id": "V0073",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 20.8,
+      "fuel_consumption_per_day": 15.5,
+      "fuel_cost_usd_per_day": 23.3
+    },
+    {
+      "vessel_id": "V0074",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 21.2,
+      "fuel_consumption_per_day": 16.2,
+      "fuel_cost_usd_per_day": 24.37
+    },
+    {
+      "vessel_id": "V0075",
+      "vessel_type": "OFRP",
+      "engine_type": "Outboard Petrol",
+      "hp": 21.4,
+      "fuel_consumption_per_day": 16.5,
+      "fuel_cost_usd_per_day": 24.74
+    },
+    {
+      "vessel_id": "V0076",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.8,
+      "fuel_consumption_per_day": 3.2,
+      "fuel_cost_usd_per_day": 4.83
+    },
+    {
+      "vessel_id": "V0077",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 8.9,
+      "fuel_consumption_per_day": 2.8,
+      "fuel_cost_usd_per_day": 4.13
+    },
+    {
+      "vessel_id": "V0078",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.2,
+      "fuel_consumption_per_day": 2.9,
+      "fuel_cost_usd_per_day": 4.39
+    },
+    {
+      "vessel_id": "V0079",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 8.8,
+      "fuel_consumption_per_day": 3.7,
+      "fuel_cost_usd_per_day": 5.56
+    },
+    {
+      "vessel_id": "V0080",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 8.8,
+      "fuel_consumption_per_day": 3.7,
+      "fuel_cost_usd_per_day": 5.57
+    },
+    {
+      "vessel_id": "V0081",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.2,
+      "fuel_consumption_per_day": 3.5,
+      "fuel_cost_usd_per_day": 5.27
+    },
+    {
+      "vessel_id": "V0082",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 8.8,
+      "fuel_consumption_per_day": 3.1,
+      "fuel_cost_usd_per_day": 4.66
+    },
+    {
+      "vessel_id": "V0083",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 8.5,
+      "fuel_consumption_per_day": 3.2,
+      "fuel_cost_usd_per_day": 4.83
+    },
+    {
+      "vessel_id": "V0084",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.8,
+      "fuel_consumption_per_day": 3.5,
+      "fuel_cost_usd_per_day": 5.3
+    },
+    {
+      "vessel_id": "V0085",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 8.8,
+      "fuel_consumption_per_day": 3.7,
+      "fuel_cost_usd_per_day": 5.51
+    },
+    {
+      "vessel_id": "V0086",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.4,
+      "fuel_consumption_per_day": 3.2,
+      "fuel_cost_usd_per_day": 4.85
+    },
+    {
+      "vessel_id": "V0087",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.2,
+      "fuel_consumption_per_day": 2.9,
+      "fuel_cost_usd_per_day": 4.4
+    },
+    {
+      "vessel_id": "V0088",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.6,
+      "fuel_consumption_per_day": 3.0,
+      "fuel_cost_usd_per_day": 4.54
+    },
+    {
+      "vessel_id": "V0089",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.1,
+      "fuel_consumption_per_day": 3.5,
+      "fuel_cost_usd_per_day": 5.23
+    },
+    {
+      "vessel_id": "V0090",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.4,
+      "fuel_consumption_per_day": 3.6,
+      "fuel_cost_usd_per_day": 5.47
+    },
+    {
+      "vessel_id": "V0091",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.7,
+      "fuel_consumption_per_day": 3.1,
+      "fuel_cost_usd_per_day": 4.7
+    },
+    {
+      "vessel_id": "V0092",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 8.1,
+      "fuel_consumption_per_day": 3.2,
+      "fuel_cost_usd_per_day": 4.85
+    },
+    {
+      "vessel_id": "V0093",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.7,
+      "fuel_consumption_per_day": 3.7,
+      "fuel_cost_usd_per_day": 5.48
+    },
+    {
+      "vessel_id": "V0094",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 8.4,
+      "fuel_consumption_per_day": 3.3,
+      "fuel_cost_usd_per_day": 4.89
+    },
+    {
+      "vessel_id": "V0095",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.8,
+      "fuel_consumption_per_day": 3.0,
+      "fuel_cost_usd_per_day": 4.46
+    },
+    {
+      "vessel_id": "V0096",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 8.2,
+      "fuel_consumption_per_day": 3.6,
+      "fuel_cost_usd_per_day": 5.45
+    },
+    {
+      "vessel_id": "V0097",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 8.7,
+      "fuel_consumption_per_day": 2.9,
+      "fuel_cost_usd_per_day": 4.3
+    },
+    {
+      "vessel_id": "V0098",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 8.9,
+      "fuel_consumption_per_day": 3.1,
+      "fuel_cost_usd_per_day": 4.64
+    },
+    {
+      "vessel_id": "V0099",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 9.4,
+      "fuel_consumption_per_day": 3.0,
+      "fuel_cost_usd_per_day": 4.52
+    },
+    {
+      "vessel_id": "V0100",
+      "vessel_type": "TRAD",
+      "engine_type": "Outboard Petrol",
+      "hp": 8.6,
+      "fuel_consumption_per_day": 3.3,
+      "fuel_cost_usd_per_day": 4.9
+    }
+  ],
+  "trip_calculation": {
+    "segments": [
+      {
+        "distance_km": 104.96,
+        "estimated_trip_duration_hours": 4.77,
+        "fuel_consumption_liters": 35.42,
+        "vessel_used": "V0001",
+        "fuel_cost_usd": 46.04
+      },
+      {
+        "distance_km": 302.34,
+        "estimated_trip_duration_hours": 13.74,
+        "fuel_consumption_liters": 102.04,
+        "vessel_used": "V0001",
+        "fuel_cost_usd": 132.62
+      },
+      {
+        "distance_km": 237.35,
+        "estimated_trip_duration_hours": 10.79,
+        "fuel_consumption_liters": 80.11,
+        "vessel_used": "V0001",
+        "fuel_cost_usd": 104.12
+      }
+    ],
+    "totals": {
+      "distance_km": 644.65,
+      "fuel_consumption_liters": 217.57,
+      "fuel_cost_usd": 282.78,
+      "estimated_trip_duration_hours": 29.299999999999997
+    }
+  },
+  "maintenance_vessels": []
+}

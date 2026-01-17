@@ -252,6 +252,19 @@ def create_app() -> FastAPI:
         print(f"⚠️ Failed to load maintenance rules router: {e}")
         pass
 
+    # fuel consumption router (NEW - calculate fuel consumption for trips)
+    try:
+        from app.api.v1 import fuel_consumption as fuel_consumption_router
+        app.include_router(
+            fuel_consumption_router.router,
+            prefix="/api/v1/fuel",
+            tags=["fuel-consumption"]
+        )
+        print("✅ Fuel consumption router registered at /api/v1/fuel")
+    except Exception as e:
+        print(f"⚠️ Failed to load fuel consumption router: {e}")
+        pass
+
     return app
 
 
