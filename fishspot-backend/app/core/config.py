@@ -7,7 +7,7 @@ class Settings:
     DATABASE_URL: str = os.environ.get("DATABASE_URL", "sqlite:///./fishspot.db")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24 * 7))
     REFRESH_TOKEN_EXPIRE_MINUTES: int = int(os.environ.get("REFRESH_TOKEN_EXPIRE_MINUTES", 60 * 24 * 30))
-    MODEL_PATH: str = os.environ.get("MODEL_PATH", "app/ml/xgb_classification_tuned.joblib")
+    MODEL_PATH: str = os.environ.get("MODEL_PATH", "app/ml/new_xgb_trained_random_ts20260214_084749.joblib")
 
 
 settings = Settings()

@@ -19,7 +19,7 @@ from app.services import openmeteo_service
 
 # Primary and alternative model locations
 MODEL_PATH = Path(__file__).resolve().parents[2] / "models" / "fish_hotspot_xgb_species.joblib"
-ALT_MODEL = Path(__file__).resolve().parents[1] / "ml" / "xgb_classification_tuned.joblib"
+ALT_MODEL = Path(__file__).resolve().parents[1] / "ml" / "new_xgb_trained_random_ts20260214_084749.joblib"
 
 
 def _load_pipeline():

@@ -29,16 +29,40 @@ def _safe_mean_from_response(r, var_index: int):
 
 
 def get_sst_ssh_for_points(lats: List[float], lons: List[float], retries: int = 3) -> List[Dict[str, float]]:
-    """Query Open-Meteo Marine API for each lat/lon and return list of dicts:
-    [{'sst': float|None, 'ssh': float|None}, ...]
+    """Query Open-Meteo Marine API in ONE batch request for all lat/lon points.
+    Returns list of dicts: [{'sst': float|None, 'ssh': float|None}, ...]
+    Falls back to individual calls if batch fails.
     """
     if len(lats) != len(lons):
         raise ValueError("lats and lons must be same length")
+    if not lats:
+        return []
 
     session = requests_cache.CachedSession('.cache', expire_after=3600)
     sess = retry(session, retries=retries, backoff_factor=0.2)
     client = openmeteo_requests.Client(session=sess)
 
+    # ── Attempt 1: single batch request for all points ─────────────────────
+    try:
+        params = {
+            'latitude':  [float(la) for la in lats],
+            'longitude': [float(lo) for lo in lons],
+            'hourly': ['sea_surface_temperature', 'sea_level_height_msl'],
+        }
+        responses = client.weather_api('https://marine-api.open-meteo.com/v1/marine', params=params)
+        out = []
+        for r in responses:
+            sst = _safe_mean_from_response(r, 0)
+            ssh = _safe_mean_from_response(r, 1)
+            out.append({'sst': sst, 'ssh': ssh})
+        while len(out) < len(lats):
+            out.append({'sst': None, 'ssh': None})
+        print(f"✅ Open-Meteo batch: {len(out)} points in 1 request")
+        return out[:len(lats)]
+    except Exception as e:
+        print(f"⚠️ Open-Meteo batch failed ({e}), falling back to individual calls")
+
+    # ── Attempt 2: individual calls (fallback) ─────────────────────────────
     out = []
     for lat, lon in zip(lats, lons):
         try:
@@ -46,7 +70,6 @@ def get_sst_ssh_for_points(lats: List[float], lons: List[float], retries: int = 
                 'latitude': float(lat),
                 'longitude': float(lon),
                 'hourly': ['sea_surface_temperature', 'sea_level_height_msl'],
-                'utm_source': 'fishspot-backend',
             }
             responses = client.weather_api('https://marine-api.open-meteo.com/v1/marine', params=params)
             if not responses:

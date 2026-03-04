@@ -5,20 +5,23 @@ The fuel consumption API provides endpoints to calculate fuel requirements for v
 ## Available Endpoints
 
 ### 1. Calculate Fuel Consumption
+
 **POST** `/api/v1/fuel/calculate-fuel-consumption`
 
 Request body:
+
 ```json
 {
   "start_lat": 6.9,
   "start_lon": 79.8,
   "end_lat": 7.2,
   "end_lon": 80.1,
-  "vessel_id": "V0001"  // Optional - uses average vessel if not provided
+  "vessel_id": "V0001" // Optional - uses average vessel if not provided
 }
 ```
 
 Response:
+
 ```json
 {
   "distance_km": 47.0,
@@ -30,9 +33,11 @@ Response:
 ```
 
 ### 2. List All Vessels
+
 **GET** `/api/v1/fuel/vessels`
 
 Response:
+
 ```json
 {
   "vessels": [
@@ -50,9 +55,11 @@ Response:
 ```
 
 ### 3. Get Specific Vessel Details
+
 **GET** `/api/v1/fuel/vessels/{vessel_id}`
 
 Response:
+
 ```json
 {
   "vessel_id": "V0001",
@@ -69,26 +76,37 @@ Response:
 To integrate this with your hotspot map frontend:
 
 1. **Get coordinates from map clicks/selection**:
+
    ```javascript
    const startCoords = { lat: startLatitude, lon: startLongitude };
    const endCoords = { lat: endLatitude, lon: endLongitude };
    ```
 
 2. **Make API call to calculate fuel**:
+
    ```javascript
-   const calculateFuelConsumption = async (startLat, startLon, endLat, endLon, vesselId = null) => {
-     const response = await fetch('http://localhost:8000/api/v1/fuel/calculate-fuel-consumption', {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({
-         start_lat: startLat,
-         start_lon: startLon,
-         end_lat: endLat,
-         end_lon: endLon,
-         vessel_id: vesselId
-       })
-     });
-     
+   const calculateFuelConsumption = async (
+     startLat,
+     startLon,
+     endLat,
+     endLon,
+     vesselId = null
+   ) => {
+     const response = await fetch(
+       "http://localhost:8000/api/v1/fuel/calculate-fuel-consumption",
+       {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({
+           start_lat: startLat,
+           start_lon: startLon,
+           end_lat: endLat,
+           end_lon: endLon,
+           vessel_id: vesselId,
+         }),
+       }
+     );
+
      return await response.json();
    };
    ```
@@ -113,6 +131,7 @@ To integrate this with your hotspot map frontend:
 ## Data Source
 
 Vessel data is loaded from `/data/vessel/vessels.csv` containing:
+
 - 100+ vessel records from Sri Lanka Fisheries Department
 - Fuel consumption rates (liters/day)
 - Engine specifications (HP, type)

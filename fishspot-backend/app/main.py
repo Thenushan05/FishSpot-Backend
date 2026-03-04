@@ -65,72 +65,40 @@ def create_app() -> FastAPI:
         return response
 
     # CORS - allow local frontend dev origins
-    # Accept origins from environment variable `ALLOW_ORIGINS` (comma-separated)
-    # Fallback includes common localhost origins and 127.0.0.1 variants.
     import os
     import re
-    from starlette.responses import JSONResponse
 
-    # For development: allow common localhost origins with credentials support.
-    # When credentials are used, browsers require explicit origins (not wildcard *).
-    # The regex pattern matches all localhost/127.0.0.1 origins on any port.
     env_origins = os.environ.get("ALLOW_ORIGINS")
+
+    # Common localhost/127.0.0.1 origins on any port (covers all Vite/CRA/etc dev servers)
+    default_origins = [
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
+    ]
     allow_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
-    origins = []
-    
-    if env_origins and env_origins.strip():
-        if env_origins.strip() == "*":
-            # Use regex that matches common dev origins (localhost/127.0.0.1 on any port)
-            # This works with credentials by echoing the actual origin back
-            allow_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
-        else:
-            # Explicit list provided - use it instead of regex
-            allow_origin_regex = None
-            origins = [o.strip() for o in env_origins.split(",") if o.strip()]
-    # else: use default regex for localhost origins
 
-    # If allow_origin_regex is set, pass it to CORSMiddleware; otherwise pass explicit list.
-    cors_kwargs = {
-        "allow_credentials": True,
-        "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["*"],
-    }
-    if allow_origin_regex:
-        cors_kwargs["allow_origin_regex"] = allow_origin_regex
+    if env_origins and env_origins.strip() and env_origins.strip() != "*":
+        origins = [o.strip() for o in env_origins.split(",") if o.strip()]
     else:
-        cors_kwargs["allow_origins"] = origins
+        origins = default_origins
 
-    app.add_middleware(CORSMiddleware, **cors_kwargs)
-
-    # Helpful middleware: if an incoming request has an Origin header and that
-    # origin is not allowed, return a clear JSON 403 explaining the CORS block.
-    # This runs before route handlers but after CORSMiddleware; it just provides
-    # friendlier messages for development when the origin isn't in the allowlist.
-    def _is_origin_allowed(origin: str) -> bool:
-        if not origin:
-            return True
-        if allow_origin_regex:
-            try:
-                return re.match(allow_origin_regex, origin) is not None
-            except Exception:
-                return False
-        return origin in origins
-
-    @app.middleware("http")
-    async def _cors_check_middleware(request, call_next):
-        origin = request.headers.get("origin")
-        if origin and not _is_origin_allowed(origin):
-            # Provide a clear error explaining why the browser is blocking the request.
-            return JSONResponse(
-                status_code=403,
-                content={
-                    "detail": "CORS origin denied",
-                    "origin": origin,
-                    "allowed_origins": origins or ["*"],
-                    "hint": "Set ALLOW_ORIGINS env or add this origin to your allowlist. For development you can set ALLOW_ORIGINS='*' but this may disable credentials with some browsers.",
-                },
-            )
-        return await call_next(request)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_origin_regex=allow_origin_regex,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
 
     # Connect to Mongo on startup, close on shutdown
     @app.on_event("startup")
@@ -263,6 +231,19 @@ def create_app() -> FastAPI:
         print("✅ Fuel consumption router registered at /api/v1/fuel")
     except Exception as e:
         print(f"⚠️ Failed to load fuel consumption router: {e}")
+        pass
+
+    # market price prediction router
+    try:
+        from app.api.v1 import market as market_router
+        app.include_router(
+            market_router.router,
+            prefix="/api/v1/market",
+            tags=["market"],
+        )
+        print("✅ Market router registered at /api/v1/market")
+    except Exception as e:
+        print(f"⚠️ Failed to load market router: {e}")
         pass
 
     return app
