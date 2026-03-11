@@ -246,6 +246,45 @@ def create_app() -> FastAPI:
         print(f"⚠️ Failed to load market router: {e}")
         pass
 
+    # fish vision / AI catch identifier router
+    try:
+        from app.api.v1 import vision as vision_router
+        app.include_router(
+            vision_router.router,
+            prefix="/api/v1/vision",
+            tags=["vision"],
+        )
+        print("✅ Vision router registered at /api/v1/vision")
+    except Exception as e:
+        print(f"⚠️ Failed to load vision router: {e}")
+        pass
+
+    # local-ground spot predictor (XGBoost model with Open-Meteo weather)
+    try:
+        from app.api.v1 import localground as localground_router
+        app.include_router(
+            localground_router.router,
+            prefix="/api/v1/localground",
+            tags=["localground"],
+        )
+        print("✅ Local-ground router registered at /api/v1/localground")
+    except Exception as e:
+        print(f"⚠️ Failed to load localground router: {e}")
+        pass
+
+    # favourite spots (per-user, MongoDB)
+    try:
+        from app.api.v1 import spots as spots_router
+        app.include_router(
+            spots_router.router,
+            prefix="/api/v1/spots",
+            tags=["spots"],
+        )
+        print("✅ Spots router registered at /api/v1/spots")
+    except Exception as e:
+        print(f"⚠️ Failed to load spots router: {e}")
+        pass
+
     return app
 
 

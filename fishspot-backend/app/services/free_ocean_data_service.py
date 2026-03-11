@@ -252,10 +252,21 @@ def _chlo_climatology(lat: float, lon: float) -> float:
     return 0.15
 
 # ---------------------------------------------------------------------------
-# Simple in-memory cache  {key: {'value': float, 'ts': float}}
 # ---------------------------------------------------------------------------
+# Hybrid in-memory + disk-persistent cache
+#   - In-memory: keyed by cache-key string, value = {value, ts}
+#   - Disk: ocean_disk_cache.json next to this file, persists across restarts
+#   - TTL: 4 hours (14400 s).  Spatial keys rounded to 0.25° so nearby
+#     points within ~28 km share a single cache entry.
+# ---------------------------------------------------------------------------
+_CACHE_TTL   = 14400  # 4 hours
+_DISK_CACHE_PATH = os.path.join(os.path.dirname(__file__), "ocean_disk_cache.json")
 _cache: Dict[str, dict] = {}
-_CACHE_TTL = 3600  # seconds
+
+
+def _gk(lat: float, lon: float, res: float = 0.25) -> str:
+    """Round lat/lon to nearest grid cell of `res` degrees (default 0.25°)."""
+    return f"{round(round(lat / res) * res, 4)},{round(round(lon / res) * res, 4)}"
 
 
 def _ck(*parts) -> str:
@@ -264,13 +275,45 @@ def _ck(*parts) -> str:
 
 def _cget(key: str) -> Optional[float]:
     e = _cache.get(key)
-    if e and (time.monotonic() - e["ts"]) < _CACHE_TTL:
+    if e and (time.time() - e["ts"]) < _CACHE_TTL:
         return e["value"]
     return None
 
 
 def _cset(key: str, v: float) -> None:
-    _cache[key] = {"value": v, "ts": time.monotonic()}
+    _cache[key] = {"value": v, "ts": time.time()}
+    # Persist to disk asynchronously — fire-and-forget
+    try:
+        import json as _json
+        _snap = {k: d for k, d in _cache.items() if (time.time() - d["ts"]) < _CACHE_TTL}
+        with open(_DISK_CACHE_PATH, "w") as _f:
+            _json.dump(_snap, _f)
+    except Exception:
+        pass
+
+
+# Load disk cache on startup
+def _load_disk_cache() -> None:
+    try:
+        import json as _json
+        if not os.path.exists(_DISK_CACHE_PATH):
+            return
+        with open(_DISK_CACHE_PATH, "r") as _f:
+            raw = _json.load(_f)
+        now = time.time()
+        loaded = 0
+        for k, d in raw.items():
+            if isinstance(d, dict) and "value" in d and "ts" in d:
+                if (now - d["ts"]) < _CACHE_TTL:
+                    _cache[k] = d
+                    loaded += 1
+        if loaded:
+            print(f"💾 Ocean cache: loaded {loaded} entries from disk (TTL 4h)")
+    except Exception as e:
+        print(f"⚠️  Disk cache load failed: {e}")
+
+
+_load_disk_cache()
 
 
 # ---------------------------------------------------------------------------
@@ -933,7 +976,7 @@ def _fetch_sst_erddap(
     for days_back in range(1, max_days + 1):
         d = (today - timedelta(days=days_back)).isoformat()
         for ds_id, base, var, has_alt, t_of_day in datasets:
-            ck = _ck("sst", ds_id, d, round(lat, 2), round(lon, 2))
+            ck = _ck("sst", ds_id, d, _gk(lat, lon))
             cached = _cget(ck)
             if cached is not None:
                 # Convert any Kelvin values that may have been cached in earlier runs
@@ -953,7 +996,7 @@ def _fetch_sst_erddap(
                 # GHRSST products (analysed_sst) are in Kelvin; convert to °C
                 if val > 200:
                     val = round(val - 273.15, 4)
-                _cset(ck, val)
+                _cset(ck, round(val, 4))
                 return val, f"{ds_id} | {d}"
     return None, "no data"
 
@@ -1091,6 +1134,11 @@ def _cmems_fetch_scalar(
             if days_back > max_days_back:
                 break
             nrt_date = (datetime.utcnow() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+            # ── Check cache before expensive Copernicus download ──────────────
+            _cmems_ck = _ck("cmems", dataset_id, variable, nrt_date, _gk(lat, lon))
+            _cached_v = _cget(_cmems_ck)
+            if _cached_v is not None:
+                return _cached_v, f"{dataset_id} {variable} | {nrt_date} (cached)"
             try:
                 with tempfile.TemporaryDirectory() as tmp:
                     out = f"{tmp}/{label}_{days_back}.nc"
@@ -1116,7 +1164,9 @@ def _cmems_fetch_scalar(
                         vals = vals[~(vals != vals)]  # drop NaN
                         if len(vals) == 0:
                             continue  # try older date
-                        return float(vals.mean()), f"{dataset_id} {variable} | {nrt_date}"
+                        result_val = round(float(vals.mean()), 4)
+                        _cset(_cmems_ck, result_val)  # cache before returning
+                        return result_val, f"{dataset_id} {variable} | {nrt_date}"
             except Exception as inner_e:
                 err = str(inner_e)
                 # Date out-of-range → retry with older date
@@ -1130,13 +1180,13 @@ def _cmems_fetch_scalar(
 
 def _fetch_ssh(lat: float, lon: float) -> Tuple[Optional[float], str]:
     """
-    SSH (sea surface height, metres).
+    SSH (sea surface height, metres).  Fine-resolution sources tried first.
 
-      1. PRIMARY   — Copernicus Marine NRT: SEALEVEL_GLO_PHY_L4_NRT_008_046  (adt, 0.25°/daily)
-      2. FALLBACK1 — Copernicus Marine NRT ocean physics (zos, 0.083°)
+      1. PRIMARY   — Copernicus Marine NRT ocean physics (zos, 0.083°/daily)
                      cmems_mod_glo_phy_anfc_0.083deg_P1D-m
-      3. FALLBACK2 — Copernicus DUACS L3 NRT along-track (~5 km, 1 Hz)
+      2. FALLBACK1 — Copernicus DUACS L3 NRT along-track (~5 km, 1 Hz)
                      Sentinel-6 / Jason-3 / SWOT nadir, sla_filtered
+      3. FALLBACK2 — Copernicus SEALEVEL_GLO_PHY_L4_NRT_008_046 (adt, 0.25°)  ← coarse last resort
       4. FALLBACK3 — ERDDAP-served AVISO SLA products (no credentials)
                      PFEG / OceanWatch  (erdTAgeo1day, hawaii_soest_* etc.)
     """
@@ -1160,32 +1210,31 @@ def _fetch_ssh(lat: float, lon: float) -> Tuple[Optional[float], str]:
 
     nrt_date = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
 
-    # --- PRIMARY: SEALEVEL_GLO_PHY_L4_NRT_008_046 (adt, 0.25°) ---------------
-    print(f"   🔵 [SSH] PRIMARY: Copernicus SEALEVEL_GLO_PHY_L4_NRT_008_046 adt ({nrt_date})...")
-    val, src = _cmems_fetch_scalar(
-        _CMEMS_SSH_L4_DS, "adt",
-        lat, lon, "ssh_adt", username, password, pad=0.25,
-    )
-    if val is not None:
-        full_src = f"Copernicus SEALEVEL_GLO_PHY_L4_NRT_008_046 adt 0.25° | {src.split('|')[-1].strip()}"
-        print(f"   ✅ [SSH PRIMARY] {val:.4f} m  [{full_src}]")
-        return val, full_src
-    print(f"   ⚠️  [SSH FB1] SEALEVEL L4 adt failed: {src}")
+    # ── Two cache keys: fine (0.083°) for high-res sources, coarse (0.25°) for L4 ──
+    _ssh_fine_ck   = _ck("ssh_result", nrt_date, _gk(lat, lon, res=0.083))
+    _ssh_coarse_ck = _ck("ssh_result", nrt_date, _gk(lat, lon))
+    _cached = _cget(_ssh_fine_ck)
+    if _cached is not None:
+        return _cached, f"SSH cached 0.083° ({nrt_date})"
+    _cached = _cget(_ssh_coarse_ck)
+    if _cached is not None:
+        return _cached, f"SSH cached 0.25° ({nrt_date})"
 
-    # --- FALLBACK1: Copernicus NRT ocean physics (zos, 0.083°) ---------------
-    print(f"   🔵 [SSH FB1] Copernicus Marine NRT zos 0.083° ({nrt_date})...")
+    # --- PRIMARY: Copernicus NRT ocean physics (zos, 0.083°) ---------------
+    print(f"   🔵 [SSH] PRIMARY: Copernicus Marine NRT zos 0.083° ({nrt_date})...")
     val, src = _cmems_fetch_scalar(
         "cmems_mod_glo_phy_anfc_0.083deg_P1D-m", "zos",
         lat, lon, "ssh_zos", username, password, pad=0.1,
     )
     if val is not None:
         full_src = f"Copernicus Marine NRT cmems_mod_glo_phy_anfc zos 0.083° | {src.split('|')[-1].strip()}"
-        print(f"   ✅ [SSH FB1] {val:.4f} m  [{full_src}]")
+        print(f"   ✅ [SSH PRIMARY] {val:.4f} m  [{full_src}]")
+        _cset(_ssh_fine_ck, round(val, 4))
         return val, full_src
-    print(f"   ⚠️  [SSH FB2] Copernicus zos failed: {src}")
+    print(f"   ⚠️  [SSH FB1] Copernicus zos 0.083° failed: {src}")
 
-    # --- FALLBACK2: Copernicus DUACS L3 NRT along-track (~5 km, 1 Hz) --------
-    print(f"   🔵 [SSH FB2] Copernicus DUACS L3 along-track sla_filtered (~5 km, 1 Hz)...")
+    # --- FALLBACK1: Copernicus DUACS L3 NRT along-track (~5 km, 1 Hz) --------
+    print(f"   🔵 [SSH FB1] Copernicus DUACS L3 along-track sla_filtered (~5 km, 1 Hz)...")
     _l3_ids = [
         "cmems_obs-sl_glo_phy-ssh_nrt_al-l3-duacs_PT1S",      # Jason-3 / Sentinel-6 1 Hz
         "cmems_obs-sl_glo_phy-ssh_nrt_s6a-lr-l3-duacs_PT1S",  # Sentinel-6A low-rate 1 Hz
@@ -1198,9 +1247,23 @@ def _fetch_ssh(lat: float, lon: float) -> Tuple[Optional[float], str]:
         )
         if val is not None:
             full_src = f"Copernicus DUACS L3 along-track sla_filtered | {l3id} | {src.split('|')[-1].strip()}"
-            print(f"   ✅ [SSH FB2] {val:.4f} m  [{full_src}]")
+            print(f"   ✅ [SSH FB1] {val:.4f} m  [{full_src}]")
+            _cset(_ssh_fine_ck, round(val, 4))
             return val, full_src
-    print(f"   ⚠️  [SSH FB3] All Copernicus L3 along-track attempts failed")
+    print(f"   ⚠️  [SSH FB2] All Copernicus L3 along-track attempts failed")
+
+    # --- FALLBACK2: SEALEVEL_GLO_PHY_L4_NRT_008_046 (adt, 0.25°) — coarse last resort ----
+    print(f"   🔵 [SSH FB2] Copernicus SEALEVEL_GLO_PHY_L4_NRT_008_046 adt 0.25° ({nrt_date})...")
+    val, src = _cmems_fetch_scalar(
+        _CMEMS_SSH_L4_DS, "adt",
+        lat, lon, "ssh_adt", username, password, pad=0.25,
+    )
+    if val is not None:
+        full_src = f"Copernicus SEALEVEL_GLO_PHY_L4_NRT_008_046 adt 0.25° | {src.split('|')[-1].strip()}"
+        print(f"   ✅ [SSH FB2] {val:.4f} m  [{full_src}]")
+        _cset(_ssh_coarse_ck, round(val, 4))
+        return val, full_src
+    print(f"   ⚠️  [SSH FB3] SEALEVEL L4 adt failed: {src}")
 
     # --- FALLBACK3: ERDDAP-served AVISO SLA (no credentials needed) ----------
     print(f"   🔵 [SSH FB3] ERDDAP-served AVISO SLA (PFEG / OceanWatch, no credentials)...")
@@ -1208,6 +1271,7 @@ def _fetch_ssh(lat: float, lon: float) -> Tuple[Optional[float], str]:
     if val is not None:
         full_src = f"ERDDAP AVISO SLA (PFEG/OceanWatch) | {src}"
         print(f"   ✅ [SSH FB3] {val:.4f} m  [{full_src}]")
+        _cset(_ssh_coarse_ck, round(val, 4))
         return val, full_src
 
     print(f"   ❌ [SSH] All sources failed — SSH unavailable for ({lat:.3f}, {lon:.3f})")
@@ -1331,9 +1395,9 @@ class FreeOceanDataService:
               5) NASA OB.DAAC Sentinel-3 OLCI 300 m (OceanWatch)
               6) Copernicus Marine OC NRT gap-free L4/L3
               7) Copernicus gap-free L4 wide bbox 2° (last resort, no orbital gaps)
-      SSH   : 1) Copernicus SEALEVEL_GLO_PHY_L4_NRT_008_046 adt 0.25°  ← PRIMARY
-              2) Copernicus Marine NRT zos 0.083° (cmems_mod_glo_phy_anfc)
-              3) Copernicus DUACS L3 along-track sla_filtered (~5 km, 1 Hz)
+      SSH   : 1) Copernicus Marine NRT zos 0.083° (cmems_mod_glo_phy_anfc)  ← PRIMARY (fine)
+              2) Copernicus DUACS L3 along-track sla_filtered (~5 km, 1 Hz)  ← fine
+              3) Copernicus SEALEVEL_GLO_PHY_L4_NRT_008_046 adt 0.25°       ← coarse last resort
               4) ERDDAP-served AVISO SLA (PFEG/OceanWatch, no credentials needed)
       SSD   : 1) Copernicus MULTIOBS_GLO_PHY_S_SURFACE_MYNRT_015_013 sos → TEOS-10  ← PRIMARY
               2) Copernicus Marine NRT cmems_mod_glo_phy_anfc sos → TEOS-10 density

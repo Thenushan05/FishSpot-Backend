@@ -13,6 +13,23 @@ import warnings
 # Suppress sklearn version mismatch warnings from the saved model (harmless)
 warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 warnings.filterwarnings("ignore", category=UserWarning, module="xgboost")
+
+# ── Suppress WinError 10054 noise on Windows ──────────────────────────────────
+# The Windows ProactorEventLoop logs a traceback when a client abruptly closes a
+# connection (e.g. browser CORS preflight). This is harmless but very noisy.
+if sys.platform == "win32":
+    import asyncio
+    _original_call_connection_lost = asyncio.proactor_events._ProactorBasePipeTransport._call_connection_lost  # type: ignore[attr-defined]
+
+    def _silent_call_connection_lost(self, exc):
+        try:
+            _original_call_connection_lost(self, exc)
+        except (ConnectionResetError, OSError):
+            pass
+
+    asyncio.proactor_events._ProactorBasePipeTransport._call_connection_lost = _silent_call_connection_lost  # type: ignore[attr-defined]
+# ──────────────────────────────────────────────────────────────────────────────
+
 import uvicorn
 
 if __name__ == "__main__":

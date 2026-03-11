@@ -98,7 +98,9 @@ def predict(
             "sst": p.get("SST"),
             "ssh": p.get("SSH"),
             "chlorophyll": p.get("CHLO"),
-            "hotspot_level": p.get("hotspot_level", "no_hotspot")
+            "hotspot_level": p.get("hotspot_level", "no_hotspot"),
+            "spawn_probability": p.get("spawn_probability"),
+            "spawning": p.get("spawning"),
         })
 
     return {"predictions": predictions}
@@ -161,7 +163,9 @@ async def predict_region(request: RegionPredictRequest):
                     "sst": p.get("SST"),
                     "ssh": p.get("SSH"),
                     "chlorophyll": p.get("CHLO"),
-                    "hotspot_level": p.get("hotspot_level", "no_hotspot")
+                    "hotspot_level": p.get("hotspot_level", "no_hotspot"),
+                    "spawn_probability": p.get("spawn_probability"),
+                    "spawning": p.get("spawning"),
                 })
         
         # Sort by score descending and take top K
@@ -285,6 +289,8 @@ async def predict_from_point(request: PredictFromPointRequest):
             "depth": depth_to_use,
             "gebco_depth_m": gebco_depth,          # positive metres — proof it's ocean
             "ocean_verified": gebco_depth is not None,  # True = GEBCO confirmed ocean
+            "spawn_probability": p.get("spawn_probability"),
+            "spawning": p.get("spawning"),
             "chlo_source": p.get("chlo_source", ""),
             "sss_source":  p.get("sss_source",  ""),
             "ssd_source":  p.get("ssd_source",  ""),

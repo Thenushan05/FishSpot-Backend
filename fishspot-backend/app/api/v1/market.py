@@ -31,6 +31,7 @@ import json
 import math
 import pickle
 import urllib.request
+import warnings
 from datetime import date, timedelta
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -47,7 +48,10 @@ _MODEL_PATH = Path(__file__).resolve().parents[2] / "ml" / "market" / "ensemble_
 def _load_model():
     if _MODEL_PATH.exists():
         with open(_MODEL_PATH, "rb") as f:
-            return pickle.load(f)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message=".*serialized model.*")
+                warnings.filterwarnings("ignore", message=".*Booster.save_model.*")
+                return pickle.load(f)
     return None
 
 _MODEL = _load_model()
@@ -239,7 +243,9 @@ def _predict_price(
 ) -> float:
     """Return predicted LKR/kg price for a species/month using the ML model."""
     if _MODEL is None:
-        return _fallback_price(species, month)
+        fb = _fallback_price(species, month)
+        print(f"[MARKET MODEL] ⚠️  Model not loaded — using fallback  {species} month={month}  -> LKR {fb:.1f}/kg")
+        return fb
     vec = _build_feature_vector(species, month, catch_vol, export_demand,
                                 local_demand, weather_factor, festival_boost)
     try:
@@ -247,7 +253,9 @@ def _predict_price(
     except Exception as e:
         print(f"⚠️ market model predict failed: {e}")
         return _fallback_price(species, month)
-    return round(pred, 1)
+    result = round(pred, 1)
+    print(f"[MARKET MODEL] ✅ {species}  month={month}  market_pressure={vec[12]:.1f}  festival_boost={festival_boost:.1f}  -> LKR {result:.1f}/kg")
+    return result
 
 
 def _predict_for_date(
@@ -281,6 +289,35 @@ def _trend_label(pct: float) -> str:
     if pct >= 1.0:  return "Up"
     if pct <= -1.0: return "Down"
     return "Stable"
+
+
+def _model_spread_confidence(prices: list, week_index: int = 0) -> float:
+    """
+    Confidence derived entirely from the ML model's own price predictions.
+
+    Logic: run the model across a set of dates/scenarios and measure how much
+    its outputs vary (coefficient of variation = std/mean).  Low spread means
+    the model is consistent → high confidence.  High spread (festival spike,
+    volatile demand) → lower confidence.
+
+    - prices:      list of prices the ML model actually predicted (e.g. 7-day forecast)
+    - week_index:  0 = current week, 1-3 = future weeks (each week ahead loses 5 pp)
+    """
+    import numpy as _np
+    if not prices:
+        return 0.70
+    mean_p = float(_np.mean(prices))
+    std_p  = float(_np.std(prices))
+    cv     = std_p / max(mean_p, 1.0)   # coefficient of variation (unitless)
+    # Map CV to confidence:
+    #   CV = 0.000 (perfectly flat week)  → 0.95
+    #   CV = 0.025 (mild festival bump)   → ~0.85
+    #   CV = 0.050 (major festival week)  → ~0.75
+    #   CV = 0.100+                       → capped at 0.55
+    conf = 0.95 - cv * 4.0
+    # Forecast horizon: each week further into the future is less reliable
+    conf -= week_index * 0.05
+    return round(max(0.55, min(0.95, conf)), 3)
 
 
 def _action(trend: str) -> str:
@@ -335,6 +372,7 @@ def predict_price(req: MarketPredictRequest):
     month  = target_date.month
     year   = target_date.year
     species = req.species.upper()
+    print(f"\n[MARKET API] 📈 /predict  species={species}  date={target_date}  model={'ensemble_voting_balanced' if _MODEL else 'FALLBACK'}")
 
     if species not in _SPECIES_PROFILE:
         raise HTTPException(status_code=400, detail=f"Unknown species code '{species}'")
@@ -394,9 +432,11 @@ def predict_price(req: MarketPredictRequest):
     for pt in forecast_7d:
         pt["index"] = round(pt["price"] / max(base, 1) * 100, 1)
 
-    # Confidence heuristic: simpler to predict when price is stable
-    spread   = max(fp["price"] for fp in forecast_7d) - min(fp["price"] for fp in forecast_7d)
-    conf_raw = max(0.55, min(0.97, 1.0 - spread / max(today_price, 1)))
+    # Confidence derived from the spread of the model's own 7-day price predictions
+    conf_raw = _model_spread_confidence([pt["price"] for pt in forecast_7d])
+
+    fest_str = f"  festival='{fest_name}' (in {fest_days}d, boost={fest_boost:.1f})" if fest_name else ""
+    print(f"[MARKET API] ✅ {species} today={today_price:.1f} prev={prev_price:.1f} ({pct_change:+.1f}%) wow={wow_pct:+.1f}% trend={trend} conf={conf_raw:.2f}{fest_str}")
 
     return {
         "species":      species,
@@ -500,8 +540,8 @@ def market_summary(
             sfd = td + timedelta(days=j)
             sparkline.append(round(_predict_for_date(code, sfd), 1))
 
-        spread   = max(sparkline) - min(sparkline)
-        conf     = max(0.55, min(0.97, 1.0 - spread / max(current, 1)))
+        # Confidence from the model's own sparkline spread (7 real model predictions)
+        conf = _model_spread_confidence(sparkline)
 
         summaries.append({
             "code":       code,
@@ -553,9 +593,8 @@ def weekly_outlook(
         last  = week_prices[-1]
         wow   = round((last - first) / max(first, 1) * 100, 2)
         trend = _trend_label(wow * 1.5)
-        # Confidence derived from model prediction spread for that week
-        spread = max(week_prices) - min(week_prices)
-        conf   = max(0.55, min(0.97, 1.0 - spread / max(avg, 1)))
+        # Confidence from model's own week_prices spread + horizon penalty
+        conf = _model_spread_confidence(week_prices, week_index=w)
 
         weeks.append({
             "week":       f"W{w+1}",
@@ -624,15 +663,7 @@ def seasonal_analysis(
 def feature_importance():
     """Return feature importance from the XGB sub-model."""
     if _MODEL is None:
-        return {"features": [
-            {"feature": "Seasonal Demand",    "importance": 0.44},
-            {"feature": "Export Premium",     "importance": 0.25},
-            {"feature": "Market Pressure",    "importance": 0.20},
-            {"feature": "Supply Surplus",     "importance": 0.04},
-            {"feature": "Species Profile",    "importance": 0.04},
-            {"feature": "Weather Factor",     "importance": 0.02},
-            {"feature": "Local Demand",       "importance": 0.01},
-        ]}
+        return {"features": [], "error": "Model not loaded — no feature importance available"}
     try:
         xgb = _MODEL.named_estimators_["xgb"]
         imp = xgb.feature_importances_

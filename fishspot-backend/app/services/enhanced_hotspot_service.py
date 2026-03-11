@@ -294,20 +294,17 @@ class EnhancedHotspotService:
         
         print(f"✅ Predictions complete!")
         
-        # Add additional metadata to results
-        chlo_source = free_ocean_results[0].get('chlo_source', 'unknown') if free_ocean_results else 'unknown'
-        sss_source  = free_ocean_results[0].get('sss_source',  'unknown') if free_ocean_results else 'unknown'
-        ssd_source  = free_ocean_results[0].get('ssd_source',  'unknown') if free_ocean_results else 'unknown'
-        sst_source_first = ocean_data_list[0].get('sst_source', 'unknown') if ocean_data_list else 'unknown'
-        ssh_source_first = ocean_data_list[0].get('ssh_source', 'unknown') if ocean_data_list else 'unknown'
-        for pred in predictions:
+        # Add per-cell metadata to results (each prediction gets its own sources)
+        for i, pred in enumerate(predictions):
+            free_pt_i = free_ocean_results[i] if i < len(free_ocean_results) else (free_ocean_results[0] if free_ocean_results else {})
+            ocean_pt_i = ocean_data_list[i] if i < len(ocean_data_list) else (ocean_data_list[0] if ocean_data_list else {})
             pred['data_source'] = 'nrt_satellite+copernicus'
             pred['data_date']   = now.strftime("%Y-%m-%d")
-            pred['chlo_source'] = chlo_source
-            pred['sss_source']  = sss_source
-            pred['ssd_source']  = ssd_source
-            pred['sst_source']  = sst_source_first
-            pred['ssh_source']  = ssh_source_first
+            pred['chlo_source'] = free_pt_i.get('chlo_source', 'unknown')
+            pred['sss_source']  = free_pt_i.get('sss_source',  'unknown')
+            pred['ssd_source']  = free_pt_i.get('ssd_source',  'unknown')
+            pred['sst_source']  = ocean_pt_i.get('sst_source', 'unknown')
+            pred['ssh_source']  = ocean_pt_i.get('ssh_source', 'unknown')
         
         return predictions
     
